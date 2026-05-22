@@ -1,0 +1,48 @@
+services:
+  # 1. Fake Storage (Configurable via .env)
+  azurite:
+    platform: linux/amd64
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: cryptocloud-storage
+    restart: always
+    ports:
+      - "${STORAGE_BLOB_PORT}:${STORAGE_BLOB_PORT}"
+      - "${STORAGE_QUEUE_PORT}:${STORAGE_QUEUE_PORT}"
+      - "${STORAGE_TABLE_PORT}:${STORAGE_TABLE_PORT}"
+    command: azurite --blobPort ${STORAGE_BLOB_PORT} --queuePort ${STORAGE_QUEUE_PORT} --tablePort ${STORAGE_TABLE_PORT} --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+    volumes:
+      - azurite_data:/data
+
+  # 2. Backend (.NET 10)
+  backend:
+    platform: linux/amd64
+    build:
+      context: ./src/backend
+      dockerfile: Dockerfile
+    container_name: cryptocloud-backend
+    ports:
+      - "${BACKEND_PORT}:${CONTAINER_INTERNAL_PORT}"
+    environment:
+      - AzureWebJobsStorage=DefaultEndpointsProtocol=http;AccountName=${AZURE_STORAGE_ACCOUNT_NAME};AccountKey=${AZURE_STORAGE_ACCOUNT_KEY};TableEndpoint=http://azurite:${STORAGE_TABLE_PORT}/${AZURE_STORAGE_ACCOUNT_NAME};QueueEndpoint=http://azurite:${STORAGE_QUEUE_PORT}/${AZURE_STORAGE_ACCOUNT_NAME};BlobEndpoint=http://azurite:${STORAGE_BLOB_PORT}/${AZURE_STORAGE_ACCOUNT_NAME};
+      - FUNCTIONS_WORKER_RUNTIME=dotnet-isolated
+      - CONNECTION_STRING=${CONNECTION_STRING}
+      - OLLAMA_API_URL=${OLLAMA_API_URL}
+      - OLLAMA_API_KEY=${OLLAMA_API_KEY}
+    depends_on:
+      - azurite
+
+  # 3. Frontend (Angular)
+  frontend:
+    build:
+      context: ./src/frontend
+      dockerfile: Dockerfile
+    container_name: cryptocloud-frontend
+    ports:
+      - "${FRONTEND_PORT}:${CONTAINER_INTERNAL_PORT}"
+    environment:
+      - BACKEND_URL=http://localhost:${BACKEND_PORT}
+    depends_on:
+      - backend
+
+volumes:
+  azurite_data:
