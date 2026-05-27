@@ -1,7 +1,6 @@
 name: Deploy Backend
 
 on:
-  workflow_dispatch:
   push:
     branches: [ main ]
     paths: [ 'src/backend/**' ]
@@ -18,19 +17,23 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore Dependencies
-        run: dotnet restore src/backend/CryptoCloud.slnx
+        run: dotnet restore src/backend/CryptoCloud.sln
 
       - name: Run Tests
-        run: dotnet test src/backend/CryptoCloud.slnx --no-restore --verbosity normal
+        run: dotnet test src/backend/CryptoCloud.sln --no-restore --verbosity normal
 
       - name: Build and Publish
         run: |
           cd src/backend
           dotnet publish CryptoCloud.Backend.csproj -c Release -o ./publish
 
-      - name: Deploy to Azure Functions
+      - name: 'Login via Azure CLI'
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 'Deploy to Azure Functions (Flex)'
         uses: Azure/functions-action@v1
         with:
           app-name: 'func-cryptocloud-backend'
-          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
           package: './src/backend/publish'
