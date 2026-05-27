@@ -18,10 +18,10 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore Dependencies
-        run: dotnet restore src/backend/CryptoCloud.sln
+        run: dotnet restore src/backend/CryptoCloud.slnx
 
       - name: Run Tests
-        run: dotnet test src/backend/CryptoCloud.sln --no-restore --verbosity normal
+        run: dotnet test src/backend/CryptoCloud.slnx --no-restore --verbosity normal
 
       - name: Build and Publish
         run: |
