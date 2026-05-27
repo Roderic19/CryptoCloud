@@ -1,0 +1,67 @@
+name: SonarCloud
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/backend/**'
+      - 'src/frontend/**'
+      - '.github/workflows/sonarcloud.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/backend/**'
+      - 'src/frontend/**'
+      - '.github/workflows/sonarcloud.yml'
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: src/frontend/package-lock.json
+
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Install frontend dependencies
+        run: cd src/frontend && npm ci
+
+      - name: Restore backend dependencies
+        run: dotnet restore src/backend/CryptoCloud.slnx
+
+      - name: Analyze backend and frontend
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          dotnet-sonarscanner begin \
+            /k:"Roderic19_CryptoCloud" \
+            /o:"roderic19" \
+            /d:sonar.token="${SONAR_TOKEN}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.exclusions="src/frontend/dist/**,src/frontend/node_modules/**,**/bin/**,**/obj/**"
+          cd src/frontend && npx vitest run && npm run build && cd ../..
+          dotnet build src/backend/CryptoCloud.slnx --no-restore
+          dotnet test src/backend/CryptoCloud.slnx --no-restore --verbosity normal
+          dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"

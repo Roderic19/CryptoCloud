@@ -19,21 +19,11 @@ jobs:
         with:
           dotnet-version: '10.0.x'
 
-      - name: Install SonarScanner
-        run: |
-          dotnet tool install --global dotnet-sonarscanner
-
       - name: Restore Dependencies
         run: dotnet restore src/backend/CryptoCloud.slnx
 
-      - name: Build and Analyze
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          dotnet-sonarscanner begin /k:"Roderic19_CryptoCloud" /o:"roderic19" /d:sonar.token="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.vscoveragexml.reportsPaths=coverage.xml
-          dotnet build src/backend/CryptoCloud.slnx --no-restore
-          dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+      - name: Build
+        run: dotnet build src/backend/CryptoCloud.slnx --no-restore
 
       - name: Run Tests
         run: dotnet test src/backend/CryptoCloud.slnx --no-restore --verbosity normal
