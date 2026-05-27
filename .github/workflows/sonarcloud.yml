@@ -45,7 +45,7 @@ jobs:
         run: dotnet tool install --global dotnet-sonarscanner
 
       - name: Install frontend dependencies
-        run: cd src/frontend && npm ci
+        run: cd src/frontend && npm install
 
       - name: Restore backend dependencies
         run: dotnet restore src/backend/CryptoCloud.slnx
