@@ -1,0 +1,35 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'src/backend/**' ]
+
+jobs:
+  build-test-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore src/backend/CryptoCloud.sln
+
+      - name: Run Tests
+        run: dotnet test src/backend/CryptoCloud.sln --no-restore --verbosity normal
+
+      - name: Build and Publish
+        run: |
+          cd src/backend
+          dotnet publish CryptoCloud.Backend.csproj -c Release -o ./publish
+
+      - name: Deploy to Azure Functions
+        uses: Azure/functions-action@v1
+        with:
+          app-name: 'func-cryptocloud-backend'
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+          package: './src/backend/publish'
