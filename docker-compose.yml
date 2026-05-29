@@ -29,7 +29,7 @@ services:
       - OLLAMA_API_URL=${OLLAMA_API_URL}
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
       - OLLAMA_MODEL=${OLLAMA_MODEL}
-      - AzureFunctionsJobHost__CORS__allowedOrigins=["http://localhost:4200"]
+      - AzureFunctionsJobHost__CORS__allowedOrigins=${ALLOWED_CORS_ORIGINS}
       - AzureFunctionsJobHost__CORS__supportCredentials=true
     depends_on:
       - azurite
