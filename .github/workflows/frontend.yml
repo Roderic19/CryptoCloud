@@ -25,6 +25,11 @@ jobs:
       - name: Run Tests
         run: cd src/frontend && npx vitest run
 
+      - name: Create Environment File
+        run: |
+          mkdir -p src/frontend/src/environments
+          echo "export const environment = { production: true, apiUrl: '${{ secrets.AZURE_BACKEND_URL }}' };" > src/frontend/src/environments/environment.ts "
+
       - name: Build
         run: cd src/frontend && npm run build
 

@@ -5,6 +5,8 @@ obj/
 node_modules/
 dist/
 .angular/
+environment.ts
+environment.development.ts
 
 .env
 
