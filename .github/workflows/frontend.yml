@@ -28,7 +28,7 @@ jobs:
       - name: Create Environment File
         run: |
           mkdir -p src/frontend/src/environments
-          echo "export const environment = { production: true, apiUrl: '${{ secrets.AZURE_BACKEND_URL }}' };" > src/frontend/src/environments/environment.ts "
+          echo "export const environment = { production: true, apiUrl: '${{ secrets.AZURE_BACKEND_URL }}' };" > src/frontend/src/environments/environment.ts
 
       - name: Build
         run: cd src/frontend && npm run build
