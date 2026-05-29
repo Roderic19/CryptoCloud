@@ -5,6 +5,11 @@ obj/
 node_modules/
 dist/
 .angular/
+environment.ts
+environment.development.ts
+!src/frontend/src/environments/
+!src/frontend/src/environments/environment.ts
+!src/frontend/src/environments/environment.development.ts
 
 .env
 
