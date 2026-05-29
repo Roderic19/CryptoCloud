@@ -27,23 +27,26 @@ public class ChatFunction
     {
         var apiUrl = Environment.GetEnvironmentVariable("OLLAMA_API_URL")!;
         var apiKey = Environment.GetEnvironmentVariable("OLLAMA_API_KEY")!;
+        var model = Environment.GetEnvironmentVariable("OLLAMA_MODEL") ?? "llama3";
 
         var chatUrl = $"{apiUrl.TrimEnd('/')}/chat";
+        _logger.LogInformation("Calling Ollama chat endpoint: {ChatUrl}", chatUrl);
+
         var payload = new
         {
-            model = "llama3",
+            model,
             messages = new[]
             {
                 new
                 {
                     role = "user",
-                    content = "Hello! Reply with: Connectivity Test Successful."
+                    content = "Hello! How are you?"
                 }
             },
             stream = false
         };
 
-        var request = new HttpRequestMessage(HttpMethod.Post, chatUrl)
+        using var request = new HttpRequestMessage(HttpMethod.Post, chatUrl)
         {
             Content = JsonContent.Create(payload)
         };
@@ -52,14 +55,33 @@ public class ChatFunction
 
         try
         {
-            var ollamaResponse = await _httpClient.SendAsync(request);
+            using var ollamaResponse = await _httpClient.SendAsync(request);
             var responseBody = await ollamaResponse.Content.ReadAsStringAsync();
 
-            var response = req.CreateResponse(ollamaResponse.StatusCode);
-            response.Headers.Add("Content-Type", "application/json");
-            await response.WriteStringAsync(responseBody);
+            if (!ollamaResponse.IsSuccessStatusCode)
+            {
+                _logger.LogWarning(
+                    "Ollama Cloud returned {StatusCode}: {ResponseBody}",
+                    (int)ollamaResponse.StatusCode,
+                    responseBody);
 
-            return response;
+                return await CreateJsonResponseAsync(
+                    req,
+                    ollamaResponse.StatusCode,
+                    new
+                    {
+                        error = "Ollama Cloud returned an error.",
+                        statusCode = (int)ollamaResponse.StatusCode,
+                        response = responseBody
+                    });
+            }
+
+            var message = ExtractAssistantMessage(responseBody);
+
+            return await CreateJsonResponseAsync(
+                req,
+                HttpStatusCode.OK,
+                new { message });
         }
         catch (HttpRequestException ex)
         {
@@ -70,6 +92,24 @@ public class ChatFunction
                 HttpStatusCode.BadGateway,
                 new { error = "Unable to reach Ollama chat endpoint." });
         }
+        catch (JsonException ex)
+        {
+            _logger.LogError(ex, "Unable to parse Ollama chat response.");
+
+            return await CreateJsonResponseAsync(
+                req,
+                HttpStatusCode.BadGateway,
+                new { error = "Unable to parse Ollama chat response." });
+        }
+    }
+
+    private static string ExtractAssistantMessage(string responseBody)
+    {
+        using var json = JsonDocument.Parse(responseBody);
+        return json.RootElement
+            .GetProperty("message")
+            .GetProperty("content")
+            .GetString() ?? string.Empty;
     }
 
     private static async Task<HttpResponseData> CreateJsonResponseAsync(

@@ -15,18 +15,18 @@ interface ChatResponse {
 })
 export class App {
   //protected readonly title = signal('CryptoCloud-Frontend');
-  private aiResponse: string = '';
+  public aiResponse = signal('Response:');
   private backendUrl: string = environment.apiUrl;
 
   constructor(private httpClient: HttpClient) {}
 
   onTestClick() {
-    this.httpClient.post<ChatResponse>(this.backendUrl + '/api/Chat', {}).subscribe({
-      next: data => {
-        this.aiResponse = data.message;
+    this.httpClient.post<ChatResponse>(this.backendUrl + '/Chat', {}).subscribe({
+      next: (data) => {
+        this.aiResponse.set(data.message || 'No response returned.');
       },
       error: (err) => {
-        this.aiResponse = 'Error: ' + err;
+        this.aiResponse.set(err.error?.error ?? err.message ?? 'Unable to contact the backend.');
       },
     });
   }

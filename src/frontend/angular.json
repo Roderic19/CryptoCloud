@@ -63,7 +63,8 @@
               "buildTarget": "CryptoCloud-Frontend:build:production"
             },
             "development": {
-              "buildTarget": "CryptoCloud-Frontend:build:development"
+              "buildTarget": "CryptoCloud-Frontend:build:development",
+              "proxyConfig": "proxy.conf.json"
             }
           },
           "defaultConfiguration": "development"

@@ -28,8 +28,17 @@ services:
       - CONNECTION_STRING=${CONNECTION_STRING}
       - OLLAMA_API_URL=${OLLAMA_API_URL}
       - OLLAMA_API_KEY=${OLLAMA_API_KEY}
+      - OLLAMA_MODEL=${OLLAMA_MODEL}
+      - AzureFunctionsJobHost__CORS__allowedOrigins=["http://localhost:4200"]
+      - AzureFunctionsJobHost__CORS__supportCredentials=true
     depends_on:
       - azurite
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/api/Health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 30s
+      retries: 12
+      start_period: 15s
 
   # 3. Frontend (Angular)
   frontend:
@@ -42,7 +51,8 @@ services:
     environment:
       - BACKEND_URL=http://localhost:${BACKEND_PORT}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   azurite_data:
