@@ -12,7 +12,7 @@ environment.development.ts
 !src/frontend/src/environments/environment.development.ts
 
 .env
-
+.DS_Store
 
 .azurefunctions/
 local.settings.json
