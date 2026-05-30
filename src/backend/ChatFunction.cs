@@ -1,5 +1,6 @@
 using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Net;
 using System.Net.Http.Headers;
@@ -22,9 +23,9 @@ public class ChatFunction
 
     [Function("Chat")]
     [Authorize]
-    public async Task<HttpResponseData> Run(
+    public async Task<IActionResult> Run(
         [HttpTrigger(AuthorizationLevel.Anonymous, "post")]
-        HttpRequestData req
+        HttpRequest req
     )
     {
         var apiUrl = Environment.GetEnvironmentVariable("OLLAMA_API_URL")!;
@@ -67,41 +68,27 @@ public class ChatFunction
                     (int)ollamaResponse.StatusCode,
                     responseBody);
 
-                return await CreateJsonResponseAsync(
-                    req,
-                    ollamaResponse.StatusCode,
-                    new
-                    {
-                        error = "Ollama Cloud returned an error.",
-                        statusCode = (int)ollamaResponse.StatusCode,
-                        response = responseBody
-                    });
+                return new ObjectResult(new
+                {
+                    error = "Ollama Cloud returned an error.",
+                    statusCode = (int)ollamaResponse.StatusCode,
+                    response = responseBody
+                }) { StatusCode = (int)ollamaResponse.StatusCode };
             }
 
             var message = ExtractAssistantMessage(responseBody);
 
-            return await CreateJsonResponseAsync(
-                req,
-                HttpStatusCode.OK,
-                new { message });
+            return new OkObjectResult(new { message });
         }
         catch (HttpRequestException ex)
         {
             _logger.LogError(ex, "Error while calling Ollama chat endpoint.");
-
-            return await CreateJsonResponseAsync(
-                req,
-                HttpStatusCode.BadGateway,
-                new { error = "Unable to reach Ollama chat endpoint." });
+            return new ObjectResult(new { error = "Unable to reach Ollama chat endpoint." }) { StatusCode = (int)HttpStatusCode.BadGateway };
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "Unable to parse Ollama chat response.");
-
-            return await CreateJsonResponseAsync(
-                req,
-                HttpStatusCode.BadGateway,
-                new { error = "Unable to parse Ollama chat response." });
+            return new ObjectResult(new { error = "Unable to parse Ollama chat response." }) { StatusCode = (int)HttpStatusCode.BadGateway };
         }
     }
 
@@ -112,17 +99,5 @@ public class ChatFunction
             .GetProperty("message")
             .GetProperty("content")
             .GetString() ?? string.Empty;
-    }
-
-    private static async Task<HttpResponseData> CreateJsonResponseAsync(
-        HttpRequestData req,
-        HttpStatusCode statusCode,
-        object body)
-    {
-        var response = req.CreateResponse(statusCode);
-        response.Headers.Add("Content-Type", "application/json");
-        await response.WriteStringAsync(JsonSerializer.Serialize(body));
-
-        return response;
     }
 }
