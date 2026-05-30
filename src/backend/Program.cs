@@ -7,9 +7,10 @@ using Microsoft.Identity.Web;
 
 var builder = FunctionsApplication.CreateBuilder(args);
 
-builder.ConfigureFunctionsWebApplication();
-
 builder.Services.AddHttpClient();
+
+builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAd");
+builder.Services.AddAuthorization();
 
 builder.Services.AddOpenTelemetry()
     .UseFunctionsWorkerDefaults()
@@ -18,7 +19,6 @@ builder.Services.AddOpenTelemetry()
             options.ConnectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
         });
 
-builder.Services.AddMicrosoftIdentityWebApiAuthentication(builder.Configuration, "AzureAd");
-builder.Services.AddAuthorization();
+builder.ConfigureFunctionsWebApplication();
 
 builder.Build().Run();
